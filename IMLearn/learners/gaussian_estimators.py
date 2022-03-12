@@ -82,8 +82,7 @@ class UnivariateGaussian:
         normal_pdf = lambda val: (1 / np.sqrt(self.var_ * 2 * np.pi)) * \
                                  pow(np.e, -0.5 * pow((val - self.mu_) / np.sqrt(self.var_), 2))
 
-        return np.ndarray([normal_pdf(val) for val in X])
-
+        return np.asarray([normal_pdf(val) for val in X])
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -104,7 +103,13 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+
+        def log_likelihood_function(sample, mu, var, m):
+            return (1 / np.power(var * 2 * np.pi, m / 2)) * \
+                   pow(np.e, (-0.5 * (1 / var)) * (np.square(np.asarray(sample) - mu)).sum())
+
+        return log_likelihood_function(X, mu, var=pow(sigma, 2), m=len(X))  # I hope you meant to give sigma and not
+                                                                                        # the var
 
 
 class MultivariateGaussian:
@@ -151,8 +156,9 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
 
+        self.mu_ = np.asarray(X).mean()
+        self.cov_ = np.cov(np.asarray(X))
         self.fitted_ = True
         return self
 
