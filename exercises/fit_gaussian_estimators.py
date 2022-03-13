@@ -6,6 +6,8 @@ import plotly.io as pio
 
 pio.templates.default = "simple_white"
 
+fig = make_subplots(rows=1, cols=2,
+                        subplot_titles=('Mean error vs Sample size', 'PDF of fitted model - sample size 1000'))
 
 def test_univariate_gaussian():
     # Question 1 - Draw samples and print fitted model
@@ -19,7 +21,6 @@ def test_univariate_gaussian():
     # Question 2 - Empirically showing sample mean is consistent
     estimates = np.ndarray(100, dtype='object')
     for count, m in enumerate(np.arange(10, 1001, 10)):
-        print(m)
         m_sample = np.random.normal(MU, VAR, m)
         estimator = UnivariateGaussian()
         estimator.fit(m_sample)
@@ -29,10 +30,7 @@ def test_univariate_gaussian():
     mu_error_normalized = (mu_error - min(mu_error)) / (max(mu_error) - min(mu_error))
     samples = [sample for sample, mu, var in estimates]
 
-    fig = make_subplots(rows=1, cols=2,
-                        subplot_titles=('Mean error vs Sample size', 'PDF of fitted model - sample size 1000'))
-
-    fig.append_trace(go.Scatter(x=list(map(len, samples)), y=mu_error_normalized, mode='lines',
+    fig.append_trace(go.Scatter(x=list(map(len, samples)), y=mu_error, mode='lines',
                                 line={'color': 'black'}, name='sample mean error'), row=1, col=1)
     fig.update_xaxes(title_text="sample size", row=1, col=1)
     fig.update_yaxes(title_text="expectation error", row=1, col=1)
@@ -47,6 +45,7 @@ def test_univariate_gaussian():
     fig.update_xaxes(title_text="sample value", row=1, col=2)
     fig.update_yaxes(title_text="PDF value - density", row=1, col=2)
     fig.show()
+
 
 
 def test_multivariate_gaussian():
@@ -64,27 +63,37 @@ def test_multivariate_gaussian():
     print(second_estimator.mu_, '\n', second_estimator.cov_)
 
     # Question 5 - Likelihood evaluation
+    DIM = 200
+    likelihood_matrix = np.zeros((DIM, DIM))
+    f_matrix = np.asarray([[(f1, f3) for f3 in np.linspace(-10, 10, DIM)] for f1 in np.linspace(-10, 10, DIM)])
 
-    likelihood_matrix = np.ndarray((20, 20))
-    # f_matrix = [[(f1,f3) for f3 in np.linspace(-10, 10, 200)] for f1 in np.linspace(-10, 10, 200)]
-    #
-    # map(second_estimator.log_likelihood, iter(f_matrix))
-
-    for i, f1 in enumerate(np.linspace(-10, 10, 20)):
-        for j, f3 in enumerate(np.linspace(-10, 10, 20)):
+    for i, f1 in enumerate(np.linspace(-10, 10, DIM)):
+        for j, f3 in enumerate(np.linspace(-10, 10, DIM)):
             likelihood_matrix[i, j] = \
-                second_estimator.log_likelihood(np.array([f1, 0, f3, 0], dtype='f').T, SIGMA,
-                                                                        second_sample)
+                second_estimator.log_likelihood(np.array([f1, 0, f3, 0]), SIGMA, second_sample)
 
-    print(likelihood_matrix)
-    fig2 = go.Figure(data=go.heatmap, x=list(np.linspace(-10, 10, 200)), y=list(np.linspace(-10, 10, 200)),
-                     z=likelihood_matrix)
+    fig2 = go.Figure(data=go.Heatmap(y=list(np.linspace(-10, 10, DIM)), x=list(np.linspace(-10, 10, DIM)),
+                                     z=likelihood_matrix, colorscale='inferno'))
+    fig2.update_layout(
+        title='Log-Likelihood as a function of f1,f3',
+
+    )
+
+    fig2.update_xaxes(
+        title_text='f1'
+    )
+    fig2.update_yaxes(
+        title_text='f3'
+    )
     fig2.show()
+
+
     # Question 6 - Maximum likelihood
-    raise NotImplementedError()
+    f_cords = (np.unravel_index(np.argmax(likelihood_matrix), likelihood_matrix.shape))
+    print(np.round(f_matrix[f_cords], decimals=3))
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # test_univariate_gaussian()
+    test_univariate_gaussian()
     test_multivariate_gaussian()

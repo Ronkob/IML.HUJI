@@ -204,13 +204,10 @@ class MultivariateGaussian:
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
 
-        def log_likelihood_function(m, k, X, sigma, mu):
-            # print('X shape ', X.shape)
-            # print('mu shape', mu.shape)
-            # print('sigma shape', sigma.shape)
-            # print('x-mu shape', (X - mu).shape)
-            # print('(X - mu)*sigma shape', (np.matmul((X - mu),np.linalg.inv(sigma))).shape)
+        def log_likelihood_function(X, sigma, mu):
+            m, k = X.shape
             return -0.5 * (m / 2 * k * np.log(2 * np.pi) + np.log(np.linalg.det(sigma)) +
                            np.trace(np.matmul(np.matmul((X - mu),np.linalg.inv(sigma)),(X - mu).T)))
-        print("log likelihood calculated")
-        return log_likelihood_function(len(X), len(X[0]), X, cov, mu)
+
+        log_likelihood = log_likelihood_function(X, cov, mu)
+        return log_likelihood
