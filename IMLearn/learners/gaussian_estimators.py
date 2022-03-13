@@ -109,7 +109,7 @@ class UnivariateGaussian:
                    pow(np.e, (-0.5 * (1 / var)) * (np.square(np.asarray(sample) - mu)).sum())
 
         return log_likelihood_function(X, mu, var=pow(sigma, 2), m=len(X))  # I hope you meant to give sigma and not
-                                                                                        # the var
+        # the var
 
 
 class MultivariateGaussian:
@@ -157,8 +157,8 @@ class MultivariateGaussian:
         Then sets `self.fitted_` attribute to `True`
         """
 
-        self.mu_ = np.asarray(X).mean()
-        self.cov_ = np.cov(np.asarray(X))
+        self.mu_ = X.mean(axis=0)
+        self.cov_ = np.cov(X.T)
         self.fitted_ = True
         return self
 
@@ -203,4 +203,14 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+
+        def log_likelihood_function(m, k, X, sigma, mu):
+            # print('X shape ', X.shape)
+            # print('mu shape', mu.shape)
+            # print('sigma shape', sigma.shape)
+            # print('x-mu shape', (X - mu).shape)
+            # print('(X - mu)*sigma shape', (np.matmul((X - mu),np.linalg.inv(sigma))).shape)
+            return -0.5 * (m / 2 * k * np.log(2 * np.pi) + np.log(np.linalg.det(sigma)) +
+                           np.trace(np.matmul(np.matmul((X - mu),np.linalg.inv(sigma)),(X - mu).T)))
+        print("log likelihood calculated")
+        return log_likelihood_function(len(X), len(X[0]), X, cov, mu)
