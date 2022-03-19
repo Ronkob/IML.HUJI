@@ -104,12 +104,11 @@ class UnivariateGaussian:
             log-likelihood calculated
         """
 
-        def log_likelihood_function(sample, mu, var, m):
-            return (1 / np.power(var * 2 * np.pi, m / 2)) * \
-                   pow(np.e, (-0.5 * (1 / var)) * (np.square(np.asarray(sample) - mu)).sum())
+        def log_likelihood_function(sample, mu, var):
+            m = len(sample)
+            return ((m / -2) * (np.log(2 * np.pi) + np.log(var))) + ((1 / (-2 * var))*((np.square(sample - mu)).sum()))
 
-        return log_likelihood_function(X, mu, var=pow(sigma, 2), m=len(X))  # I hope you meant to give sigma and not
-        # the var
+        return log_likelihood_function(X, mu, sigma)
 
 
 class MultivariateGaussian:
@@ -207,7 +206,7 @@ class MultivariateGaussian:
         def log_likelihood_function(X, sigma, mu):
             m, k = X.shape
             return -0.5 * (m / 2 * k * np.log(2 * np.pi) + np.log(np.linalg.det(sigma)) +
-                           np.trace(np.matmul(np.matmul((X - mu),np.linalg.inv(sigma)),(X - mu).T)))
+                           np.trace(np.matmul(np.matmul((X - mu), np.linalg.inv(sigma)), (X - mu).T)))
 
         log_likelihood = log_likelihood_function(X, cov, mu)
         return log_likelihood
