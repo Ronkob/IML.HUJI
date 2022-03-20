@@ -13,7 +13,7 @@ def test_univariate_gaussian():
     # Question 1 - Draw samples and print fitted model
     MU = 10
     VAR = 1
-    first_sample = np.random.normal(MU, VAR, 1000)
+    first_sample = np.sort(np.random.normal(MU, VAR, 1000))
     first_estimator = UnivariateGaussian()
     first_estimator.fit(first_sample)
     print(first_estimator.mu_, first_estimator.var_)
@@ -37,11 +37,11 @@ def test_univariate_gaussian():
 
     # Question 3 - Plotting Empirical PDF of fitted model
     fig.append_trace(go.Scatter(y=first_estimator.pdf(first_sample), x=first_sample,
-                                mode='markers', name='fitted PDF value', marker={'color': 'black'}), row=1, col=2)
+                                mode='lines+markers', name='fitted PDF value', marker={'color': 'black'}), row=1, col=2)
     normal_pdf = lambda val, mu, var: (1 / np.sqrt(var * 2 * np.pi)) * \
                                       pow(np.e, -0.5 * pow((val - mu) / np.sqrt(var), 2))
     fig.append_trace(go.Scatter(y=[normal_pdf(val, MU, VAR) for val in first_sample], x=first_sample,
-                                mode='markers', name='original PDF value', marker={'color': 'green'}), row=1, col=2)
+                                mode='lines+markers', name='original PDF value', marker={'color': 'green'}), row=1, col=2)
     fig.update_xaxes(title_text="sample value", row=1, col=2)
     fig.update_yaxes(title_text="PDF value - density", row=1, col=2)
     fig.show()
