@@ -30,7 +30,7 @@ def test_univariate_gaussian():
     mu_error_normalized = (mu_error - min(mu_error)) / (max(mu_error) - min(mu_error))
     samples = [sample for sample, mu, var in estimates]
 
-    fig.append_trace(go.Scatter(x=list(map(len, samples)), y=mu_error, mode='lines',
+    fig.append_trace(go.Scatter(x=list(map(len, samples)), y=mu_error, mode='lines+markers',
                                 line={'color': 'black'}, name='sample mean error'), row=1, col=1)
     fig.update_xaxes(title_text="sample size", row=1, col=1)
     fig.update_yaxes(title_text="expectation error", row=1, col=1)
