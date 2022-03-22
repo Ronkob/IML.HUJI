@@ -7,9 +7,11 @@ import plotly.io as pio
 pio.templates.default = "simple_white"
 
 fig = make_subplots(rows=1, cols=2,
-                        subplot_titles=('Mean error vs Sample size', 'PDF of fitted model - sample size 1000'))
+                    subplot_titles=('Mean error vs Sample size', 'PDF of fitted model - sample size 1000'))
+
 
 def test_univariate_gaussian():
+    np.random.seed(0)
     # Question 1 - Draw samples and print fitted model
     MU = 10
     VAR = 1
@@ -21,7 +23,7 @@ def test_univariate_gaussian():
     # Question 2 - Empirically showing sample mean is consistent
     estimates = np.ndarray(100, dtype='object')
     for count, m in enumerate(np.arange(10, 1001, 10)):
-        m_sample = np.random.normal(MU, VAR, m)
+        m_sample = first_sample[0:m]
         estimator = UnivariateGaussian()
         estimator.fit(m_sample)
         estimates[count] = (m_sample, estimator.mu_, estimator.var_)
@@ -41,21 +43,22 @@ def test_univariate_gaussian():
     normal_pdf = lambda val, mu, var: (1 / np.sqrt(var * 2 * np.pi)) * \
                                       pow(np.e, -0.5 * pow((val - mu) / np.sqrt(var), 2))
     fig.append_trace(go.Scatter(y=[normal_pdf(val, MU, VAR) for val in first_sample], x=first_sample,
-                                mode='lines+markers', name='original PDF value', marker={'color': 'green'}), row=1, col=2)
+                                mode='lines+markers', name='original PDF value', marker={'color': 'green'}), row=1,
+                     col=2)
     fig.update_xaxes(title_text="sample value", row=1, col=2)
     fig.update_yaxes(title_text="PDF value - density", row=1, col=2)
     fig.show()
 
 
-
 def test_multivariate_gaussian():
-    # Question 4 - Draw samples and print fitted model
-    MU_MULTY = np.asarray([0, 0, 4, 0])
 
-    SIGMA = np.asarray([[1, 0.2, 0, 0.5],
-                        [0.2, 2, 0, 0],
-                        [0, 0, 1, 0],
-                        [0.5, 0, 0, 1]])
+    # Question 4 - Draw samples and print fitted model
+    MU_MULTY = np.array([0, 0, 4, 0])
+
+    SIGMA = np.array([[1, 0.2, 0, 0.5],
+                      [0.2, 2, 0, 0],
+                      [0, 0, 1, 0],
+                      [0.5, 0, 0, 1]])
 
     second_sample = np.random.multivariate_normal(MU_MULTY, SIGMA, 1000)
     second_estimator = MultivariateGaussian()
@@ -65,7 +68,7 @@ def test_multivariate_gaussian():
     # Question 5 - Likelihood evaluation
     DIM = 200
     likelihood_matrix = np.zeros((DIM, DIM))
-    f_matrix = np.asarray([[(f1, f3) for f3 in np.linspace(-10, 10, DIM)] for f1 in np.linspace(-10, 10, DIM)])
+    f_matrix = np.array([[(f1, f3) for f3 in np.linspace(-10, 10, DIM)] for f1 in np.linspace(-10, 10, DIM)])
 
     for i, f1 in enumerate(np.linspace(-10, 10, DIM)):
         for j, f3 in enumerate(np.linspace(-10, 10, DIM)):
@@ -87,13 +90,11 @@ def test_multivariate_gaussian():
     )
     fig2.show()
 
-
     # Question 6 - Maximum likelihood
     f_cords = (np.unravel_index(np.argmax(likelihood_matrix), likelihood_matrix.shape))
-    print(np.round(f_matrix[f_cords], decimals=3))
+    print(np.round(f_matrix[f_cords], decimals=4))
 
 
 if __name__ == '__main__':
-    np.random.seed(0)
     test_univariate_gaussian()
     test_multivariate_gaussian()
