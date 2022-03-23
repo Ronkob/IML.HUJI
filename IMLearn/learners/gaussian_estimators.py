@@ -182,8 +182,8 @@ class MultivariateGaussian:
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
 
-        multivar_normal_pdf = lambda sample: np.power(det(2*np.pi*self.cov_), -0.5) * \
-                                          np.exp(-0.5*(sample-self.mu_).T*np.linalg.inv(self.cov_)*(sample-self.mu_))
+        multivar_normal_pdf = lambda sample: np.power(np.linalg.det(2*np.pi*self.cov_), -0.5) * \
+                                          np.exp(-0.5*(sample-self.mu_).dot(np.linalg.inv(self.cov_)).dot((sample-self.mu_)))
         return np.asarray([multivar_normal_pdf(sample) for sample in X])
 
     @staticmethod

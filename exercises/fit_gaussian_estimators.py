@@ -81,7 +81,6 @@ def test_multivariate_gaussian():
         title='Log-Likelihood as a function of f1,f3',
 
     )
-
     fig2.update_xaxes(
         title_text='f1'
     )
