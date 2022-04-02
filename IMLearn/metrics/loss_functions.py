@@ -16,8 +16,12 @@ def mean_square_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     MSE of given predictions
     """
-    raise NotImplementedError()
+    assert (y_pred.shape != y_true.shape), "Y_pred and Y_true are not from the same shape"
+    n = len(y_true)
+    res = y_pred-y_true
+    mse = (1/n) * np.sum(res**2)
 
+    return mse
 
 def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray, normalize: bool = True) -> float:
     """

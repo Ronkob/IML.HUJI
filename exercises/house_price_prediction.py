@@ -7,7 +7,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
+
 pio.templates.default = "simple_white"
+import sys
 
 
 def load_data(filename: str):
@@ -23,7 +25,50 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    raise NotImplementedError()
+    full_data = pd.read_csv("../datasets/house_prices.csv")
+
+    """
+    preprocessing part
+    
+    handling dates:
+     - need to figure out (date is the home sale date)
+    
+    data corrections:
+    - Waterfront, View, Condition, Grade: change to nominal values
+    - zipcode: make as arbitrary numbers
+    
+    new features:
+    - house_age
+    - renovation_flag
+    
+    missing data filling:
+    - luckily, there are no missing data 
+    
+    anomalies:
+    - exclude wierd houses with no bathrooms
+    
+    """
+    # new features
+    house_age = 2022 - full_data["yr_built"]
+    renovation_flag = (full_data["yr_renovated"] != 0).astype(int)
+    full_data['house_age'] = house_age
+    full_data['renovation_flag'] = renovation_flag
+    full_data['yr_renovated'][full_data.yr_renovated == 0] = full_data['yr_built'][full_data.yr_renovated == 0]
+    full_data['renovation_age'] = 2022 - full_data["yr_renovated"]
+
+    # anomalies handling
+    full_data = full_data[full_data.bathrooms > 0]
+
+    # categorical variables handling
+    """
+    letting go of the zipcode because is correlated with the longitude/latitude
+    """
+
+    features = full_data[['bedrooms', 'bathrooms', 'sqft_living',
+                          'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade',
+                          'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']]
+    labels = full_data["price"]
+    return features, labels
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -43,19 +88,33 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
+
+    def pearson_corr(feature1, feature2):
+        fm1 = feature1.mean()
+        fm2 = feature2.mean()
+
+        pearson = ((feature1-fm1)*(feature2-fm2)).sum() / \
+            (np.sqrt(((feature1-fm1)**2).sum()) * np.sqrt(((feature2-fm2)**2).sum()))
+        return pearson
+
+    feature_list = ['bedrooms', 'bathrooms', 'sqft_living',
+                    'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade',
+                    'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']
+
+    y = [pearson_corr(X[feature], y) for feature in feature_list]
+    fig = px.scatter(x=feature_list, y=y)
+    fig.show()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
+    features, response = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
+    feature_evaluation(features, response)
 
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -64,4 +123,4 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+
