@@ -16,7 +16,8 @@ def mean_square_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     MSE of given predictions
     """
-    assert (y_pred.shape != y_true.shape), "Y_pred and Y_true are not from the same shape"
+    print('this is shpe y pred ', y_pred.shape, ' this is shpe y_true', y_true.shape)
+    assert (y_pred.shape == y_true.shape), "Y_pred and Y_true are not from the same shape"
     n = len(y_true)
     res = y_pred-y_true
     mse = (1/n) * np.sum(res**2)

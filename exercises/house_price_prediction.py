@@ -25,7 +25,7 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    full_data = pd.read_csv("../datasets/house_prices.csv")
+    full_data = pd.read_csv("../datasets/house_prices.csv").dropna().drop_duplicates()
 
     """
     preprocessing part
@@ -53,22 +53,34 @@ def load_data(filename: str):
     renovation_flag = (full_data["yr_renovated"] != 0).astype(int)
     full_data['house_age'] = house_age
     full_data['renovation_flag'] = renovation_flag
-    full_data['yr_renovated'][full_data.yr_renovated == 0] = full_data['yr_built'][full_data.yr_renovated == 0]
     full_data['renovation_age'] = 2022 - full_data["yr_renovated"]
+
+    # changing the neighbors relation
+    # full_data['sqft_living15'] = np.abs(full_data['sqft_living15']-full_data['sqft_living'])
+    # full_data['sqft_lot15'] = np.abs(full_data['sqft_lot15'] - full_data['sqft_lot'])
+
+    # remove outlaw rows
+    full_data = full_data[full_data.waterfront.isin([0, 1]) &
+            full_data.view.isin(range(5)) &
+            full_data.condition.isin(range(1, 6)) &
+            full_data.grade.isin(range(1, 15))]
 
     # anomalies handling
     full_data = full_data[full_data.bathrooms > 0]
+    full_data = full_data[full_data.sqft_lot < 1300000]
+    full_data = full_data[full_data.sqft_lot15 < 50000]
+
+    features_used = full_data[['bedrooms', 'bathrooms', 'sqft_living', 'zipcode',
+                               'sqft_lot', 'sqft_living15', 'sqft_lot15',
+                               'floors', 'waterfront', 'view', 'condition', 'grade',
+                               'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']]
 
     # categorical variables handling
-    """
-    letting go of the zipcode because is correlated with the longitude/latitude
-    """
+    features_used = pd.get_dummies(features_used, prefix='zipcode_', columns=['zipcode'])
 
-    features = full_data[['bedrooms', 'bathrooms', 'sqft_living',
-                          'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade',
-                          'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']]
     labels = full_data["price"]
-    return features, labels
+
+    return features_used, labels
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -93,16 +105,17 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
         fm1 = feature1.mean()
         fm2 = feature2.mean()
 
-        pearson = ((feature1-fm1)*(feature2-fm2)).sum() / \
-            (np.sqrt(((feature1-fm1)**2).sum()) * np.sqrt(((feature2-fm2)**2).sum()))
+        pearson = ((feature1 - fm1) * (feature2 - fm2)).sum() / \
+                  (np.sqrt(((feature1 - fm1) ** 2).sum()) * np.sqrt(((feature2 - fm2) ** 2).sum()))
         return pearson
 
     feature_list = ['bedrooms', 'bathrooms', 'sqft_living',
-                    'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade',
+                    'sqft_lot', 'sqft_living15', 'sqft_lot15',
+                    'floors', 'waterfront', 'view', 'condition', 'grade', 'lat', 'long',
                     'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']
 
-    y = [pearson_corr(X[feature], y) for feature in feature_list]
-    fig = px.scatter(x=feature_list, y=y)
+    features_pearson = [pearson_corr(X[feature], y) for feature in feature_list]
+    fig = px.scatter(x=feature_list, y=features_pearson)
     fig.show()
 
 
@@ -112,9 +125,13 @@ if __name__ == '__main__':
     features, response = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(features, response)
+    # feature_evaluation(features, response)
 
     # Question 3 - Split samples into training- and testing sets.
+    # TODO: implement my own split test train
+    from sklearn.model_selection import train_test_split
+
+    train_X, test_X, train_y, test_y = train_test_split(features, response)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -123,4 +140,31 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    loss = np.zeros(shape=(91, 100))
+    for p in range(10, 101):
+        for i in range(100):
+            model = LinearRegression()
+            train_X_sample = np.asarray(train_X.sample(frac=(p / 100), random_state=i*p))
+            train_y_sample = np.asarray(train_y.sample(frac=(p / 100), random_state=i*p))
+            test_X_sample = np.asarray(test_X.sample(frac=(p / 100), random_state=i*p*2))
+            test_y_sample = np.asarray(test_y.sample(frac=(p / 100), random_state=i*p*2))
+            model.fit(train_X_sample, train_y_sample)
+            run_loss = model._loss(test_X_sample, test_y_sample)
+            loss[p - 10, i] = run_loss
 
+    loss_mean = loss.mean(axis=1)
+    loss_var = loss.std(axis=1)
+    print('this is shape loss min ', loss_mean.shape, ' this is shpe y_true', loss_var.shape)
+    x_axis_values = [p for p in range(10, 101)]
+
+    fig_data = (go.Scatter(x=x_axis_values, y=loss_mean, mode="markers+lines", name="Mean Prediction",
+                           line=dict(dash="dash"), marker=dict(color="green", opacity=.7)),
+                go.Scatter(x=x_axis_values, y=loss_mean-2 * loss_var, fill=None, mode="lines",
+                           line=dict(color="lightgrey"), showlegend=False),
+                go.Scatter(x=x_axis_values, y=loss_mean+2 * loss_var, fill='tonexty', mode="lines",
+                           line=dict(color="lightgrey"), showlegend=False),)
+
+    fig = go.Figure()
+    for f in fig_data:
+        fig.add_trace(f)
+    fig.show()
