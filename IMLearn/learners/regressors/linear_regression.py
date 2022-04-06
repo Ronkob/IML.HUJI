@@ -95,5 +95,4 @@ class LinearRegression(BaseEstimator):
             Performance under MSE loss function
         """
         y_pred = self._predict(X)
-        print('this is shpe y pred ', y_pred.shape, ' this is shpe y_true', y.shape)
         return mse(y, y_pred)

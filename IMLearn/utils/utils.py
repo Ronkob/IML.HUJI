@@ -33,12 +33,12 @@ def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .7
         Responses of test samples
 
     """
-    data_permutation = (pd.concat([X,y], axis=1)).sample(frac=1)
+    data_permutation = (pd.concat([X, y], axis=1)).sample(frac=1)
     num_train = int(train_proportion * len(data_permutation))
     num_test = int((1-train_proportion) * len(data_permutation))
 
-    train_X, train_y = data_permutation[0:num_train, 0:-1], data_permutation[0:num_train, -1]
-    test_X, test_y = data_permutation[-num_test:None, 0:-1], data_permutation[-num_test:None, -1]
+    train_X, train_y = data_permutation.iloc[0:num_train, 0:-1], data_permutation.iloc[0:num_train, -1]
+    test_X, test_y = data_permutation.iloc[-num_test:None, 0:-1], data_permutation.iloc[-num_test:None, -1]
     return train_X, train_y, test_X, test_y
 
 
@@ -61,3 +61,4 @@ def confusion_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         while value `j` vas found in vector `b`
     """
     raise NotImplementedError()
+

@@ -61,9 +61,9 @@ def load_data(filename: str):
 
     # remove outlaw rows
     full_data = full_data[full_data.waterfront.isin([0, 1]) &
-            full_data.view.isin(range(5)) &
-            full_data.condition.isin(range(1, 6)) &
-            full_data.grade.isin(range(1, 15))]
+                          full_data.view.isin(range(5)) &
+                          full_data.condition.isin(range(1, 6)) &
+                          full_data.grade.isin(range(1, 15))]
 
     # anomalies handling
     full_data = full_data[full_data.bathrooms > 0]
@@ -72,8 +72,8 @@ def load_data(filename: str):
 
     features_used = full_data[['bedrooms', 'bathrooms', 'sqft_living', 'zipcode',
                                'sqft_lot', 'sqft_living15', 'sqft_lot15',
-                               'floors', 'waterfront', 'view', 'condition', 'grade',
-                               'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']]
+                               'floors', 'waterfront', 'view', 'grade', 'condition', 'house_age',
+                               'sqft_above', 'sqft_basement', 'renovation_flag', 'renovation_age']]
 
     # categorical variables handling
     features_used = pd.get_dummies(features_used, prefix='zipcode_', columns=['zipcode'])
@@ -105,19 +105,35 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
         fm1 = feature1.mean()
         fm2 = feature2.mean()
 
+        # I guess it's equivalent to choosing a corner in the cov matrix and then device it normally...
         pearson = ((feature1 - fm1) * (feature2 - fm2)).sum() / \
                   (np.sqrt(((feature1 - fm1) ** 2).sum()) * np.sqrt(((feature2 - fm2) ** 2).sum()))
+
         return pearson
 
-    feature_list = ['bedrooms', 'bathrooms', 'sqft_living',
-                    'sqft_lot', 'sqft_living15', 'sqft_lot15',
-                    'floors', 'waterfront', 'view', 'condition', 'grade', 'lat', 'long',
-                    'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']
+    # feature_list = ['bedrooms', 'bathrooms', 'sqft_living',
+    #                 'sqft_lot', 'sqft_living15', 'sqft_lot15',
+    #                 'floors', 'waterfront', 'view', 'condition', 'grade',
+    #                 'sqft_above', 'sqft_basement', 'house_age', 'renovation_flag', 'renovation_age']
+    #
+    # features_pearson = [pearson_corr(X[feature], y) for feature in feature_list]
+    # fig = px.scatter(x=feature_list, y=features_pearson,
+    #                  title="pearson correlation between each feature in the model against the response",
+    #                  labels={"x": "features names", "y": "pearson correlation with 'price'"})
+    # fig.show()
 
-    features_pearson = [pearson_corr(X[feature], y) for feature in feature_list]
-    fig = px.scatter(x=feature_list, y=features_pearson)
-    fig.show()
+    f1, f2 = 'sqft_living', 'condition'
 
+    fig1 = px.scatter(pd.DataFrame({'x': X[f1], 'y': y}), x="x", y="y", trendline="ols",
+                     title=f"{f1} values against price values <br>Pearson Correlation is {pearson_corr(X[f1], y)}",
+                     labels={"x": f"{f1} values", "y": "price values"})
+
+    fig2 = px.scatter(pd.DataFrame({'x': X[f2], 'y': y}), x="x", y="y", trendline="ols",
+                     title=f"{f2} values against price values <br>Pearson Correlation is {pearson_corr(X[f2], y)}",
+                     labels={"x": f"{f2} values", "y": "price values"})
+
+    fig1.write_image("pearson.correlation.%s.png" % f1)
+    fig2.write_image("pearson.correlation.%s.png" % f2)
 
 if __name__ == '__main__':
     np.random.seed(0)
@@ -125,13 +141,10 @@ if __name__ == '__main__':
     features, response = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(features, response)
+    feature_evaluation(features, response)
 
-    # Question 3 - Split samples into training- and testing sets.
-    # TODO: implement my own split test train
-    from sklearn.model_selection import train_test_split
-
-    train_X, test_X, train_y, test_y = train_test_split(features, response)
+    # Question 3 - Split samples into training- and testing sets.,.
+    train_X, train_y, test_X, test_y = split_train_test(features, response)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -140,31 +153,32 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    loss = np.zeros(shape=(91, 100))
+    loss = np.zeros(shape=(91, 10))
     for p in range(10, 101):
-        for i in range(100):
+        for i in range(10):
             model = LinearRegression()
-            train_X_sample = np.asarray(train_X.sample(frac=(p / 100), random_state=i*p))
-            train_y_sample = np.asarray(train_y.sample(frac=(p / 100), random_state=i*p))
-            test_X_sample = np.asarray(test_X.sample(frac=(p / 100), random_state=i*p*2))
-            test_y_sample = np.asarray(test_y.sample(frac=(p / 100), random_state=i*p*2))
+            train_X_sample = np.asarray(train_X.sample(frac=(p / 100), random_state=i * p))
+            train_y_sample = np.asarray(train_y.sample(frac=(p / 100), random_state=i * p))
             model.fit(train_X_sample, train_y_sample)
-            run_loss = model._loss(test_X_sample, test_y_sample)
+            run_loss = model._loss(np.asarray(test_X), np.asarray(test_y))
             loss[p - 10, i] = run_loss
 
     loss_mean = loss.mean(axis=1)
     loss_var = loss.std(axis=1)
-    print('this is shape loss min ', loss_mean.shape, ' this is shpe y_true', loss_var.shape)
     x_axis_values = [p for p in range(10, 101)]
 
-    fig_data = (go.Scatter(x=x_axis_values, y=loss_mean, mode="markers+lines", name="Mean Prediction",
+    fig_data = (go.Scatter(x=x_axis_values, y=loss_mean, mode="markers+lines", name="Prediction Loss Mean",
                            line=dict(dash="dash"), marker=dict(color="green", opacity=.7)),
-                go.Scatter(x=x_axis_values, y=loss_mean-2 * loss_var, fill=None, mode="lines",
+                go.Scatter(x=x_axis_values, y=loss_mean - 2 * loss_var, fill=None, mode="lines",
+                           name='Confidence Interval',
                            line=dict(color="lightgrey"), showlegend=False),
-                go.Scatter(x=x_axis_values, y=loss_mean+2 * loss_var, fill='tonexty', mode="lines",
+                go.Scatter(x=x_axis_values, y=loss_mean + 2 * loss_var, fill='tonexty', mode="lines",
                            line=dict(color="lightgrey"), showlegend=False),)
 
     fig = go.Figure()
     for f in fig_data:
         fig.add_trace(f)
-    fig.show()
+        fig.update_layout(title="Model Error Rate against Sample Portions Of the Training Set",
+                                     xaxis=dict(title="Sample Size in Percentages of Training Set"),
+                                     yaxis=dict(title="MSE of the Sample Test Set"))
+    fig.write_image("Model ER.png")
