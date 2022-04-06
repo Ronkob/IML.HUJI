@@ -135,24 +135,7 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     fig1.write_image("pearson.correlation.%s.png" % f1)
     fig2.write_image("pearson.correlation.%s.png" % f2)
 
-if __name__ == '__main__':
-    np.random.seed(0)
-    # Question 1 - Load and preprocessing of housing prices dataset
-    features, response = load_data("../datasets/house_prices.csv")
-
-    # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(features, response)
-
-    # Question 3 - Split samples into training- and testing sets.,.
-    train_X, train_y, test_X, test_y = split_train_test(features, response)
-
-    # Question 4 - Fit model over increasing percentages of the overall training data
-    # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
-    #   1) Sample p% of the overall training data
-    #   2) Fit linear model (including intercept) over sampled set
-    #   3) Test fitted model over test set
-    #   4) Store average and variance of loss over test set
-    # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+def fit_model(train_X, train_y, test_X, test_y) -> NoReturn:
     loss = np.zeros(shape=(91, 10))
     for p in range(10, 101):
         for i in range(10):
@@ -179,6 +162,31 @@ if __name__ == '__main__':
     for f in fig_data:
         fig.add_trace(f)
         fig.update_layout(title="Model Error Rate against Sample Portions Of the Training Set",
-                                     xaxis=dict(title="Sample Size in Percentages of Training Set"),
-                                     yaxis=dict(title="MSE of the Sample Test Set"))
+                          xaxis=dict(title="Sample Size in Percentages of Training Set"),
+                          yaxis=dict(title="MSE of the Sample Test Set"))
     fig.write_image("Model ER.png")
+    return None
+
+
+if __name__ == '__main__':
+    np.random.seed(0)
+    # Question 1 - Load and preprocessing of housing prices dataset
+    features, response = load_data("../datasets/house_prices.csv")
+
+    # Question 2 - Feature evaluation with respect to response
+    feature_evaluation(features, response)
+
+    # Question 3 - Split samples into training- and testing sets.,.
+    train_X, train_y, test_X, test_y = split_train_test(features, response)
+
+    # Question 4 - Fit model over increasing percentages of the overall training data
+    # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
+    #   1) Sample p% of the overall training data
+    #   2) Fit linear model (including intercept) over sampled set
+    #   3) Test fitted model over test set
+    #   4) Store average and variance of loss over test set
+    # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+
+    fit_model(train_X, train_y, test_X, test_y)
+
+
