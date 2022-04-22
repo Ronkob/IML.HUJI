@@ -1,5 +1,8 @@
+import sys
+
 from IMLearn.learners.classifiers import Perceptron, LDA, GaussianNaiveBayes
 from typing import Tuple
+from typing import NoReturn
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -36,16 +39,38 @@ def run_perceptron():
     Create a line plot that shows the perceptron algorithm's training loss values (y-axis)
     as a function of the training iterations (x-axis).
     """
-    for n, f in [("Linearly Separable", "linearly_separable.npy"), ("Linearly Inseparable", "linearly_inseparable.npy")]:
+
+    fig = make_subplots(rows=2, cols=2)
+
+    for i, (n, f) in enumerate([("Linearly Separable", "../datasets/linearly_separable.npy"),
+                              ("Linearly Inseparable", "../datasets/linearly_inseparable.npy")]):
         # Load dataset
-        raise NotImplementedError()
+        data = load_dataset(f)
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
-        raise NotImplementedError()
+
+        def callback_loss(fit: Perceptron, x: np.ndarray, y: int) -> NoReturn:
+            losses.append(fit.loss(data[0], data[1]))
+
+        perceptron = Perceptron(callback=callback_loss)
+        perceptron.fit(data[0], data[1])
 
         # Plot figure of loss as function of fitting iteration
-        raise NotImplementedError()
+        fig.append_trace(go.Scatter(x=np.arange(len(losses)), y=losses, mode='lines+markers', line={'color': 'black'},
+                                    name=n), row=1, col=i+1)
+
+        print(perceptron.coefs_)
+        lim = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.5, .5])
+        w = perceptron.coefs_[1:]
+        yy = (-w[0] / w[1]) * lim[0] - (perceptron.coefs_[0] / w[1])
+        # # Plot figure of loss as function of fitting iteration
+        fig.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers',
+                                    marker=dict(size=10, color=data[1], line=dict(color="black", width=1))), row=2,
+                         col=i+1)
+        fig.append_trace(go.Scatter(x=lim[0], y=[yy[0], yy[1]], mode='lines', line_color="black", showlegend=False),
+                         row=2, col=i+1)
+    fig.show()
 
 
 def get_ellipse(mu: np.ndarray, cov: np.ndarray):
@@ -101,6 +126,8 @@ def compare_gaussian_classifiers():
 
 
 if __name__ == '__main__':
+    sys.path.append('../datasets/')
     np.random.seed(0)
     run_perceptron()
-    compare_gaussian_classifiers()
+    # compare_gaussian_classifiers()
+    import sklearn
