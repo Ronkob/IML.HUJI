@@ -40,12 +40,19 @@ def run_perceptron():
     as a function of the training iterations (x-axis).
     """
 
-    fig = make_subplots(rows=2, cols=2)
+    fig = make_subplots(rows=2, cols=2,
+                        subplot_titles=('Perceptron Loss of Linearly Seperable data',
+                                        'Perceptron Loss of Linearly Ineperable data',
+                                        'Perceptron prediction of Linearly Seperable data',
+                                        'Perceptron prediction of Linearly Inseperable data'))
 
     for i, (n, f) in enumerate([("Linearly Separable", "../datasets/linearly_separable.npy"),
                               ("Linearly Inseparable", "../datasets/linearly_inseparable.npy")]):
         # Load dataset
         data = load_dataset(f)
+        fig.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', name=f'{n} Perceptron prediction',
+                                    marker=dict(size=10, color=data[1], line=dict(color="black", width=1))), row=2,
+                         col=i + 1)
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
@@ -64,12 +71,11 @@ def run_perceptron():
         lim = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.5, .5])
         w = perceptron.coefs_[1:]
         yy = (-w[0] / w[1]) * lim[0] - (perceptron.coefs_[0] / w[1])
-        # # Plot figure of loss as function of fitting iteration
-        fig.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers',
-                                    marker=dict(size=10, color=data[1], line=dict(color="black", width=1))), row=2,
-                         col=i+1)
+        # Plot figure of loss as function of fitting iteration
         fig.append_trace(go.Scatter(x=lim[0], y=[yy[0], yy[1]], mode='lines', line_color="black", showlegend=False),
                          row=2, col=i+1)
+        fig.update_xaxes(title_text="number of iterations", row=1)
+        fig.update_yaxes(title_text="Misclassification Loss", row=1)
     fig.show()
 
 
@@ -130,4 +136,4 @@ if __name__ == '__main__':
     np.random.seed(0)
     run_perceptron()
     # compare_gaussian_classifiers()
-    import sklearn
+
