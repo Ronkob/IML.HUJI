@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from math import atan2, pi
 from sklearn.linear_model import Perceptron as SK_perceptron
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as lda
 
 def load_dataset(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -46,19 +47,13 @@ def run_perceptron():
         # Load dataset
         data = load_dataset("C:/Users/PC/Documents/ACADEMY/4th Semester/IML/IML.HUJI/datasets/linearly_inseparable.npy")
 
-        # Fit Perceptron and record loss in each fit iteration
-        losses = []
 
-        def callback_loss(fit: Perceptron, x: np.ndarray, y: int) -> NoReturn:
-            losses.append(fit.loss(data[0], data[1]))
-            print(losses)
-
-        perceptron = SK_perceptron()
-        perceptron.fit(data[0], data[1])
-        print(perceptron.coef_)
+        model = LDA()
+        model.fit(data[0], data[1])
+        print(model.coefs_)
         lim = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.5, .5])
-        w = perceptron.coef_[0]
-        yy = (-w[0] / w[1]) * lim[0] - (perceptron.intercept_[0] / w[1])
+        w = model.coefs_[0]
+        yy = (-w[0] / w[1]) * lim[0] - (model.intercept_[0] / w[1])
         # # Plot figure of loss as function of fitting iteration
         fig.append_trace(go.Scatter(x=data[0][:,0], y=data[0][:,1], mode='markers',
                             marker=dict(size=10, color=data[1], line=dict(color="black", width=1))), row=1, col=1)
