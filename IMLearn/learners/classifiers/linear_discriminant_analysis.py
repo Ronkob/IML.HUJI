@@ -48,7 +48,7 @@ class LDA(BaseEstimator):
             Responses of input data to fit to
         """
         assert (int(X.shape[0]) == int(len(y)))
-        
+
         self.classes_, class_inverse, class_counts = np.unique(y, return_counts=True, return_inverse=True)
         # print(f'print from lda fit. \n  this is y {y[1:5]} and this is self.classes_ {self.classes_}')
         self.mu_ = np.zeros((len(self.classes_), X.shape[1]))  # mu of size (classes_, features)
@@ -63,7 +63,7 @@ class LDA(BaseEstimator):
         # print(f'print from lda fit. \n  this is self_cov \n  {self.cov_}')
         self.cov_ = self.cov_ / (X.shape[0] - len(self.classes_))  # unbiased estimator for the covariance
         self._cov_inv = np.linalg.pinv(self.cov_)
-        self.pi_ = class_counts / len(y)  # vector of size k
+        self.pi_ = class_counts / len(y)  # vector of size classes
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -106,17 +106,17 @@ class LDA(BaseEstimator):
         for i, sample in enumerate(X):
             for class_value in self.classes_:
                 mu_k = self.mu_[self.classes_ == class_value]
-                # print(f'self._cov_inv * mu_k {np.dot(self._cov_inv, mu_k.T)}')
-                a_k = np.dot(np.array(np.dot(self._cov_inv, mu_k.T)).flatten(), sample)
-                # print(f'Printed in likelihoods comp \n  self.cov_inv size: {self._cov_inv.shape}'
-                #      f'\n  mu_k: {mu_k} \n  mu_k_transposed: {mu_k.T} \n self_classes {self.classes_}, \n self_mu {self.mu_}, \n self_pi {self.pi_}')
-                b_k = (np.log(self.pi_[self.classes_ == class_value]))
-                # print(f'Printed in likelihoods comp \n {np.dot(self._cov_inv, mu_k.T)}')
-                b_k -= 0.5 * np.dot(mu_k,np.dot(self._cov_inv, mu_k.T).flatten())
-                # print(f'Printed in likelihoods comp \n  a_k = {a_k}\n   b_k = {b_k}')
-                likelihoods[i, class_value] = a_k + b_k
-                # print("Printed in likelihood comp in LDA class::: ", likelihoods[i, class_value] )
-        # print(f'likelihood matrix: {likelihoods[0:5,:]}')
+                z = np.sqrt(np.power((2*np.pi), X.shape[1]))
+                c = sample - mu_k
+                exponent = -0.5 * np.dot(c, np.dot(self._cov_inv, c.T).flatten())
+                likelihoods[i, class_value] = self.pi_[self.classes_ == class_value] * np.exp(exponent) / z
+
+                # second method for same thing
+                # mu_k = self.mu_[self.classes_ == class_value]
+                # a_k = np.dot(np.array(np.dot(self._cov_inv, mu_k.T)).flatten(), sample)
+                # b_k = (np.log(self.pi_[self.classes_ == class_value]))
+                # b_k -= 0.5 * np.dot(mu_k,np.dot(self._cov_inv, mu_k.T).flatten())
+                # likelihoods[i, class_value] = a_k + b_k
         return likelihoods
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:

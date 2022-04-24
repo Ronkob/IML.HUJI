@@ -1,3 +1,4 @@
+import numpy as np
 import sys
 
 from IMLearn.learners.classifiers import Perceptron, LDA, GaussianNaiveBayes
@@ -41,10 +42,10 @@ def run_perceptron():
     """
 
     fig = make_subplots(rows=2, cols=2,
-                        subplot_titles=('Perceptron Loss of Linearly Seperable data',
-                                        'Perceptron Loss of Linearly Ineperable data',
-                                        'Perceptron prediction of Linearly Seperable data',
-                                        'Perceptron prediction of Linearly Inseperable data'))
+                        subplot_titles=('Loss of Linearly Separable data',
+                                        'Loss of Linearly Inseparable data',
+                                        'prediction of Linearly Separable data',
+                                        'prediction of Linearly Inseparable data'))
 
     for i, (n, f) in enumerate([("Linearly Separable", "../datasets/linearly_separable.npy"),
                                 ("Linearly Inseparable", "../datasets/linearly_inseparable.npy")]):
@@ -67,15 +68,16 @@ def run_perceptron():
         fig.append_trace(go.Scatter(x=np.arange(len(losses)), y=losses, mode='lines+markers', line={'color': 'black'},
                                     name=n), row=1, col=i + 1)
 
-        print(perceptron.coefs_)
+        # Plot figure of the classification rule on the data
         lim = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.5, .5])
         w = perceptron.coefs_[1:]
         yy = (-w[0] / w[1]) * lim[0] - (perceptron.coefs_[0] / w[1])
-        # Plot figure of loss as function of fitting iteration
+
         fig.append_trace(go.Scatter(x=lim[0], y=[yy[0], yy[1]], mode='lines', line_color="black", showlegend=False),
                          row=2, col=i + 1)
         fig.update_xaxes(title_text="number of iterations", row=1)
         fig.update_yaxes(title_text="Misclassification Loss", row=1)
+        fig.layout.update(title_text=f'Perceptron Classifier', title_x=0.5, title_font_size=20, margin=dict(t=120))
     fig.show()
 
 
@@ -101,55 +103,69 @@ def get_ellipse(mu: np.ndarray, cov: np.ndarray):
     xs = (l1 * np.cos(theta) * np.cos(t)) - (l2 * np.sin(theta) * np.sin(t))
     ys = (l1 * np.sin(theta) * np.cos(t)) + (l2 * np.cos(theta) * np.sin(t))
 
-    return go.Scatter(x=mu[0] + xs, y=mu[1] + ys, mode="lines", marker_color="black")
+    return go.Scatter(x=mu[0] + xs, y=mu[1] + ys, showlegend=False, mode="lines", marker_color="black")
 
 
 def compare_gaussian_classifiers():
     """
     Fit both Gaussian Naive Bayes and LDA classifiers on both gaussians1 and gaussians2 datasets
     """
-    fig2 = make_subplots(rows=2, cols=3,
-                         subplot_titles=(f'Gaussians1 dataset', f'Gaussians1 LDA predictions, accuracy:',
-                                         "Gaussians1 Gaussian_Naive_Bayes predictions",
-                                         f'Gaussians2 dataset', f'Gaussians2 LDA predictions, accuracy:',
-                                         "Gaussians2 Gaussian_Naive_Bayes predictions"))
+    # Create subplots
 
     for i, f in enumerate(["../datasets/gaussian1.npy", "../datasets/gaussian2.npy"]):
         # Load dataset
         data = load_dataset(f)
+        fig2 = make_subplots(rows=1, cols=2, horizontal_spacing=0.1,
+                             subplot_titles=("LDA Predictions, Accuracy:",
+                                             "Gaussian Naive Bayes Predictions, Accuracy:"))
+        model_names = ["LDA", "Gaussian Naive Bayes"]
+        for j, model in enumerate([LDA(), GaussianNaiveBayes()]):
+            # Fit models and predict over training set
+            model.fit(data[0], data[1])
+            predictions = model.predict(X=data[0])  # should be an m length vector of classes
 
-        # Fit models and predict over training set
-        LDA_model = LDA()
-        LDA_model.fit(data[0], data[1])
-        LDA_predictions = LDA_model.predict(X=data[0])  # should be an m length vector of 1 and -1
+            # Plot a figure with two subplots, showing the Gaussian Naive Bayes predictions on the left and LDA
+            # predictions on the right. Plot title should specify dataset used and subplot titles should specify
+            # algorithm and accuracy
 
-        # Plot a figure with two subplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
-        # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
-        # Create subplots
-        from IMLearn.metrics import accuracy
+            # plotting the correct data
+            # fig2.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers',
+            #                              marker=dict(size=10, opacity=0.9, color=data[1],
+            #                                          symbol=class_symbols[1],
+            #                                          line=dict(color="black", width=1))), row=1, col=3)
 
-        fig2.append_trace(
-            go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', marker=dict(size=10, opacity=0.6, color=data[1],
-                       line=dict(color="black", width=1))), row=1+i, col= 1)
+            from IMLearn.metrics import accuracy
+            lims = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.2, .2])
+            fig2.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers',
+                                         text=predictions, name =f'{model_names[j]} predictions',
+                                         marker=dict(size=10, opacity=0.9, color=predictions, colorscale=class_colors(3),
+                                                     symbol=class_symbols[1 * (np.asarray(predictions == data[1]))],
+                                                     line=dict(color="black", width=1))), row=1, col=j + 1)
+            fig2.append_trace(decision_surface(model.predict, lims[0], lims[1], showscale=False), row=1, col=j + 1)
+            model_accuracy = accuracy(data[1], predictions)
+            fig2.layout.annotations[j].update(text=f'{fig2.layout.annotations[j].text}{model_accuracy}')
 
-        fig2.append_trace(
-            go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', marker=dict(size=10, opacity=0.6, color=LDA_predictions,
-                       line=dict(color="black", width=1))), row=1+i, col= 2)
-        LDA_accuracy = accuracy(data[1], LDA_predictions)
-        fig2.layout.annotations[(3*i)+1].update(text=f'{fig2.layout.annotations[(3*i)+1].text}{LDA_accuracy}')
+            # Add `X` dots specifying fitted Gaussians' means
+            fig2.append_trace(
+                go.Scatter(x=model.mu_[:, 0], y=model.mu_[:, 1], mode='markers', showlegend=False,
+                           marker=dict(size=30, opacity=0.9, color='black', symbol=class_symbols[1])), row=1, col=j + 1)
 
+            # Add ellipses depicting the covariances of the fitted Gaussians
+            if j == 0:
+                for class_number in model.classes_:
+                    fig2.append_trace(
+                        get_ellipse(model.mu_[class_number], model.cov_), row=1, col=j + 1)
+            if j == 1:
+                for class_number in model.classes_:
+                    fig2.append_trace(
+                        get_ellipse(model.mu_[class_number], np.diagflat(model.vars_[class_number])), row=1, col=j + 1)
 
-
-    fig2.show()
-    # Add traces for data-points setting symbols and colors
-
-    # Add `X` dots specifying fitted Gaussians' means
-
-    # Add ellipses depicting the covariances of the fitted Gaussians
+        fig2.layout.update(title_text=f'Gaussians {i + 1} Dataset', title_x=0.5, title_font_size=20, margin=dict(t=120))
+        fig2.show()
 
 
 if __name__ == '__main__':
     sys.path.append('../datasets/')
     np.random.seed(0)
-    # run_perceptron()
+    run_perceptron()
     compare_gaussian_classifiers()
