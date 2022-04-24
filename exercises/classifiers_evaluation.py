@@ -47,7 +47,7 @@ def run_perceptron():
                                         'Perceptron prediction of Linearly Inseperable data'))
 
     for i, (n, f) in enumerate([("Linearly Separable", "../datasets/linearly_separable.npy"),
-                              ("Linearly Inseparable", "../datasets/linearly_inseparable.npy")]):
+                                ("Linearly Inseparable", "../datasets/linearly_inseparable.npy")]):
         # Load dataset
         data = load_dataset(f)
         fig.append_trace(go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', name=f'{n} Perceptron prediction',
@@ -65,7 +65,7 @@ def run_perceptron():
 
         # Plot figure of loss as function of fitting iteration
         fig.append_trace(go.Scatter(x=np.arange(len(losses)), y=losses, mode='lines+markers', line={'color': 'black'},
-                                    name=n), row=1, col=i+1)
+                                    name=n), row=1, col=i + 1)
 
         print(perceptron.coefs_)
         lim = np.array([data[0].min(axis=0), data[0].max(axis=0)]).T + np.array([-.5, .5])
@@ -73,7 +73,7 @@ def run_perceptron():
         yy = (-w[0] / w[1]) * lim[0] - (perceptron.coefs_[0] / w[1])
         # Plot figure of loss as function of fitting iteration
         fig.append_trace(go.Scatter(x=lim[0], y=[yy[0], yy[1]], mode='lines', line_color="black", showlegend=False),
-                         row=2, col=i+1)
+                         row=2, col=i + 1)
         fig.update_xaxes(title_text="number of iterations", row=1)
         fig.update_yaxes(title_text="Misclassification Loss", row=1)
     fig.show()
@@ -108,32 +108,48 @@ def compare_gaussian_classifiers():
     """
     Fit both Gaussian Naive Bayes and LDA classifiers on both gaussians1 and gaussians2 datasets
     """
-    for f in ["gaussian1.npy", "gaussian2.npy"]:
+    fig2 = make_subplots(rows=2, cols=3,
+                         subplot_titles=(f'Gaussians1 dataset', f'Gaussians1 LDA predictions, accuracy:',
+                                         "Gaussians1 Gaussian_Naive_Bayes predictions",
+                                         f'Gaussians2 dataset', f'Gaussians2 LDA predictions, accuracy:',
+                                         "Gaussians2 Gaussian_Naive_Bayes predictions"))
+
+    for i, f in enumerate(["../datasets/gaussian1.npy", "../datasets/gaussian2.npy"]):
         # Load dataset
-        raise NotImplementedError()
+        data = load_dataset(f)
 
         # Fit models and predict over training set
-        raise NotImplementedError()
+        LDA_model = LDA()
+        LDA_model.fit(data[0], data[1])
+        LDA_predictions = LDA_model.predict(X=data[0])  # should be an m length vector of 1 and -1
 
-        # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
+        # Plot a figure with two subplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
         from IMLearn.metrics import accuracy
-        raise NotImplementedError()
 
-        # Add traces for data-points setting symbols and colors
-        raise NotImplementedError()
+        fig2.append_trace(
+            go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', marker=dict(size=10, opacity=0.6, color=data[1],
+                       line=dict(color="black", width=1))), row=1+i, col= 1)
 
-        # Add `X` dots specifying fitted Gaussians' means
-        raise NotImplementedError()
+        fig2.append_trace(
+            go.Scatter(x=data[0][:, 0], y=data[0][:, 1], mode='markers', marker=dict(size=10, opacity=0.6, color=LDA_predictions,
+                       line=dict(color="black", width=1))), row=1+i, col= 2)
+        LDA_accuracy = accuracy(data[1], LDA_predictions)
+        fig2.layout.annotations[(3*i)+1].update(text=f'{fig2.layout.annotations[(3*i)+1].text}{LDA_accuracy}')
 
-        # Add ellipses depicting the covariances of the fitted Gaussians
-        raise NotImplementedError()
+
+
+    fig2.show()
+    # Add traces for data-points setting symbols and colors
+
+    # Add `X` dots specifying fitted Gaussians' means
+
+    # Add ellipses depicting the covariances of the fitted Gaussians
 
 
 if __name__ == '__main__':
     sys.path.append('../datasets/')
     np.random.seed(0)
-    run_perceptron()
-    # compare_gaussian_classifiers()
-
+    # run_perceptron()
+    compare_gaussian_classifiers()
