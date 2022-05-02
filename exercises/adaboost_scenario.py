@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
-from IMLearn.learners.metalearners.adaboost import AdaBoost
 from IMLearn.learners.classifiers import DecisionStump
+from IMLearn.metalearners.adaboost import AdaBoost
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -33,21 +33,35 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
     noise_ratio: invert the label for this ratio of the samples
     '''
     X, y = np.random.rand(n, 2) * 2 - 1, np.ones(n)
-    y[np.sum(X ** 2, axis=1) < 0.5 ** 2] = -1
+    # y[np.sum(X ** 2, axis=1) < 0.5 ** 2] = -1
+    y[X[:, 0] < 0.5] = -1
     y[np.random.choice(n, int(noise_ratio * n))] *= -1
     return X, y
 
 
-def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
+def q1(train_X, train_y, test_X, test_y) -> AdaBoost:
+    model = DecisionStump()
+    predictions = model.fit_predict(train_X, train_y)
+    # split_feature, threshold = model.j_, model.threshold_
+    go.Figure(go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode='markers',
+                         marker=dict(size=10, opacity=0.9, color=train_y, colorscale=class_colors(3),
+                                     symbol=class_symbols[1 + predictions]))).show()
+
+
+def q2(model, iterations, lims):
+    pass
+
+
+def fit_and_evaluate_adaboost(noise: float, n_learners=250, train_size=5000, test_size=500):
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    raise NotImplementedError()
+    q1(train_X, train_y, test_X, test_y)
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+    # q2(model, T, lims)
 
     # Question 3: Decision surface of best performing ensemble
     raise NotImplementedError()
@@ -58,4 +72,4 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    fit_and_evaluate_adaboost(noise=0)
