@@ -47,7 +47,6 @@ def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray, normalize: b
     b = y_true - y_pred
     misclass_index = np.nonzero(y_true - y_pred)[0]
     if len(y_true) > 0 and len(y_pred) > 0:
-        print(f'    inside MCE, len of y: {len(y_pred)} ')
         if not normalize:
             return len(misclass_index)
         else:
