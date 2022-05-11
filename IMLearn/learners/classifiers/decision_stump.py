@@ -41,12 +41,14 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to - of {-1,1} labeling only
         """
-        loss_star, theta_star = np.inf, np.inf
+        loss_star = np.inf
         for sign, feature_idx in product([-1, 1], range((X.shape[1]))):
             threshold, loss = self._find_threshold(values=X[:, feature_idx], labels=y, sign=sign)
             if loss < loss_star:
                 self.sign_, self.threshold_, self.j_ = sign, threshold, feature_idx
                 loss_star = loss
+
+        a = 5+4
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -104,8 +106,8 @@ class DecisionStump(BaseEstimator):
         sorted_idx = np.argsort(values)
         values, labels = values[sorted_idx], labels[sorted_idx]
 
-        thresholds = np.concatenate([[-np.inf], list((values[1:] + values[:-1]) / 2), [np.inf]])  # all the middle values
-        min_threshold_loss = np.shape(labels[labels == sign])[0]  # equivalent of choosing just everything
+        thresholds = np.concatenate([[-np.inf], list((values[1:] + values[:-1]) / 2), [np.inf]])  # all middle values
+        min_threshold_loss = np.sum(np.abs(labels[labels*sign < 0]))  # equivalent of choosing just everything
         losses = np.append(min_threshold_loss, min_threshold_loss-np.cumsum(labels*sign))
         chosen_idx = np.argmin(losses)  # index of value from sorted to put the threshold afterwards
         return thresholds[chosen_idx], losses[chosen_idx]
