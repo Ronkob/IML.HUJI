@@ -5,10 +5,11 @@ from sklearn import datasets
 from IMLearn.metrics import mean_square_error
 from IMLearn.utils import split_train_test
 from IMLearn.model_selection import cross_validate
-# from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate as cv
 from IMLearn.learners.regressors import PolynomialFitting, LinearRegression, RidgeRegression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import Ridge
 
 from utils import *
 import plotly.graph_objects as go
@@ -104,6 +105,51 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     q3(best_k, best_loss, train_X, train_y, test_X, test_y, noise, n_samples)
 
 
+def q6(n_samples):
+    X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
+    train_X, train_y, test_X, test_y = split_train_test(X, y, train_proportion=n_samples / X.shape[0])
+    return np.asarray(train_X), np.asarray(train_y), np.asarray(test_X), np.asarray(test_y)
+
+
+def q7(train_X, train_y, test_X, test_y, n_evaluations):
+    ridge_losses = []
+    lasso_losses = []
+    for lamda in np.linspace(0, 2, n_evaluations):
+        lasso_model = Lasso(alpha=lamda)
+        avg_train_lasso, avg_test_lasso = cross_validate(lasso_model, train_X, train_y, scoring=mean_square_error)
+        lasso_losses.append((avg_train_lasso, avg_test_lasso))
+        ridge_model = Ridge(alpha=lamda/2)
+        avg_train_ridge, avg_test_ridge = cross_validate(ridge_model, train_X, train_y, scoring=mean_square_error)
+        ridge_losses.append((avg_train_ridge, avg_test_ridge))
+
+    ridge_losses = np.asarray(ridge_losses)
+    lasso_losses = np.asarray(lasso_losses)
+
+    go.Figure(data=[go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 0], name='lasso train avg loss', mode='markers'),
+                    go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 1], name='lasso test avg loss', mode='markers'),
+                    go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 0], name='ridge train avg loss', mode='markers'),
+                    go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 1], name='ridge test avg loss', mode='markers')
+                    ],
+              layout=dict(
+                  title=rf"$\text{{(7) train and validation errors along different regularization terms | }}$")).show()
+
+    return np.argmin(ridge_losses[:,1])/n_evaluations, np.argmin(lasso_losses[:,1])/(2*n_evaluations)
+
+def q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y):
+    ls_model = LinearRegression().fit (train_X, train_y)
+    ridge_model = Ridge(alpha=lamda_ridge).fit(train_X, train_y)
+    lasso_model = Lasso(alpha=lamda_lasso).fit(train_X, train_y)
+
+    ls_model_predictions = (ls_model.predict(test_X))
+    ridge_model_predictions = (ridge_model.predict(test_X))
+    lasso_model_predictions = (lasso_model.predict(test_X))
+
+    ls_model_loss = mean_square_error(ls_model_predictions, test_y)
+    ridge_model_loss = mean_square_error(ridge_model_predictions, test_y)
+    lasso_model_loss = mean_square_error(lasso_model_predictions, test_y)
+
+    print(ls_model_loss, ridge_model_loss, lasso_model_loss)
+
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
     Using sklearn's diabetes dataset use cross-validation to select the best fitting regularization parameter
@@ -118,13 +164,13 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
         Number of regularization parameter values to evaluate for each of the algorithms
     """
     # Question 6 - Load diabetes dataset and split into training and testing portions
-    raise NotImplementedError()
+    train_X, train_y, test_X, test_y = q6(n_samples)
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    raise NotImplementedError()
+    lamda_ridge, lamda_lasso = q7(train_X, train_y, test_X, test_y, n_evaluations)
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    raise NotImplementedError()
+    q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y)
 
 
 if __name__ == '__main__':
@@ -132,3 +178,4 @@ if __name__ == '__main__':
     # select_polynomial_degree(n_samples=100, noise=5)
     # select_polynomial_degree(n_samples=100, noise=0)
     # select_polynomial_degree(n_samples=1500, noise=10)
+    select_regularization_parameter()

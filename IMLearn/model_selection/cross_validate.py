@@ -38,25 +38,38 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
         Average validation score over folds
     """
     assert X.shape[0] == y.shape[0]
-    assert 1 == 1
 
-    shuffle_idx = np.arange(X.shape[0])
-    np.random.shuffle(shuffle_idx)
-    X_shuffled = X[shuffle_idx]
-    y_shuffled = y[shuffle_idx]
     train_loss = []
     test_loss = []
 
-    for i in range(cv):
-        print(len(X_shuffled[0:int(i * X.shape[0] / cv)]))
-        train_X = np.append(X_shuffled[0:int(i * X.shape[0] / cv)], X_shuffled[int((i + 1) * X.shape[0] / cv):])
-        train_y = np.append(y_shuffled[0:int(i * y.shape[0] / cv)], y_shuffled[int((i + 1) * y.shape[0] / cv):])
-        test_X = X_shuffled[int(i * X.shape[0] / cv):int((i + 1) * X.shape[0] / cv)].flatten()
-        test_y = y_shuffled[int(i * y.shape[0] / cv):int((i + 1) * y.shape[0] / cv)].flatten()
+    X_splited = np.asarray(np.array_split(X, cv))
+    y_splited = np.asarray(np.array_split(y, cv))
+
+    for fold in range(cv):
+        b = np.array([True if i != fold else False for i in range(cv)])
+        train_X = np.concatenate(X_splited[b])
+        test_X = np.concatenate(X_splited[~b])
+        train_y = np.concatenate(y_splited[b])
+        test_y = np.concatenate(y_splited[~b])
+
         estimator.fit(train_X, train_y)
         train_predictions = estimator.predict(train_X)
         test_predictions = estimator.predict(test_X)
+
         train_loss.append(scoring(train_predictions, train_y))
         test_loss.append(scoring(test_predictions, test_y))
 
-    return np.mean(train_loss), np.mean(test_loss)
+    return np.mean(np.asarray(train_loss)), np.mean(np.asarray(test_loss))
+
+    # for i in range(cv):
+    #     train_X = np.append(X_shuffled[0:int(i * X.shape[0] / cv)], X_shuffled[int((i + 1) * X.shape[0] / cv):], axis=0)
+    #     train_y = np.append(y_shuffled[0:int(i * y.shape[0] / cv)], y_shuffled[int((i + 1) * y.shape[0] / cv):], axis=0)
+    #     test_X = X_shuffled[int(i * X.shape[0] / cv):int((i + 1) * X.shape[0] / cv)]
+    #     test_y = y_shuffled[int(i * y.shape[0] / cv):int((i + 1) * y.shape[0] / cv)]
+    #     estimator.fit(train_X, train_y)
+    #     train_predictions = estimator.predict(train_X)
+    #     test_predictions = estimator.predict(test_X)
+    #     train_loss.append(scoring(train_predictions, train_y))
+    #     test_loss.append(scoring(test_predictions, test_y))
+
+
