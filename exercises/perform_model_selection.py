@@ -5,11 +5,8 @@ from sklearn import datasets
 from IMLearn.metrics import mean_square_error
 from IMLearn.utils import split_train_test
 from IMLearn.model_selection import cross_validate
-from sklearn.model_selection import cross_validate as cv
 from IMLearn.learners.regressors import PolynomialFitting, LinearRegression, RidgeRegression
 from sklearn.linear_model import Lasso
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import Ridge
 
 from utils import *
 import plotly.graph_objects as go
@@ -111,37 +108,44 @@ def q6(n_samples):
     return np.asarray(train_X), np.asarray(train_y), np.asarray(test_X), np.asarray(test_y)
 
 
-def q7(train_X, train_y, test_X, test_y, n_evaluations):
+def q7(train_X, train_y, n_evaluations):
     ridge_losses = []
     lasso_losses = []
-    for lamda in np.linspace(0, 2, n_evaluations):
-        lasso_model = Lasso(alpha=lamda)
+    lasso_lamdas = np.linspace(0, 2, n_evaluations)
+    ridge_lamdas = np.linspace(0, 1, n_evaluations)
+
+    for i in range(n_evaluations):
+        lasso_model = Lasso(alpha=lasso_lamdas[i])
         avg_train_lasso, avg_test_lasso = cross_validate(lasso_model, train_X, train_y, scoring=mean_square_error)
         lasso_losses.append((avg_train_lasso, avg_test_lasso))
-        ridge_model = RidgeRegression(lam=lamda/2)
+        ridge_model = RidgeRegression(lam=ridge_lamdas[i])
         avg_train_ridge, avg_test_ridge = cross_validate(ridge_model, train_X, train_y, scoring=mean_square_error)
         ridge_losses.append((avg_train_ridge, avg_test_ridge))
 
     ridge_losses = np.asarray(ridge_losses)
     lasso_losses = np.asarray(lasso_losses)
 
-    fig = go.Figure(data=[go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 0], name='lasso train avg loss', mode='markers'),
-                    go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 1], name='lasso test avg loss', mode='markers'),
-                    go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 0], name='ridge train avg loss', mode='markers'),
-                    go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 1], name='ridge test avg loss', mode='markers')
-                    ],
-              layout=dict(
-                  title=rf"$\text{{(7) train and validation errors along different regularization terms | }}$"))
+    fig = go.Figure(data=[go.Scatter(x=lasso_lamdas, y=lasso_losses[:, 0],
+                                     name='lasso train avg loss', mode='markers'),
+                          go.Scatter(x=lasso_lamdas, y=lasso_losses[:, 1],
+                                     name='lasso test avg loss', mode='markers'),
+                          go.Scatter(x=ridge_lamdas, y=ridge_losses[:, 0],
+                                     name='ridge train avg loss', mode='markers'),
+                          go.Scatter(x=ridge_lamdas, y=ridge_losses[:, 1],
+                                     name='ridge test avg loss', mode='markers')],
+                    layout=dict(
+                        title=rf"$\text{{(7) train and validation errors along different regularization terms | }}$"))
     fig.add_annotation(xref='paper', yref='paper', x=0, y=0.95, align='left',
-                       text=f'Best regularization paramater for Ridge is {np.argmin(ridge_losses[:,1])/n_evaluations} \n '
-                            f'Best regularization paramater for Lasso is {np.argmin(lasso_losses[:,1])/(2*n_evaluations)}',
+                       text=f'Best regularization paramater for Ridge is {ridge_lamdas[np.argmin(ridge_losses[:, 1])]}\n'
+                            f'Best regularization paramater for Lasso is {lasso_lamdas[np.argmin(lasso_losses[:, 1])]}',
                        font=dict(size=16), showarrow=False)
     fig.show()
 
-    return np.argmin(ridge_losses[:,1])/n_evaluations, np.argmin(lasso_losses[:,1])/(2*n_evaluations)
+    return ridge_lamdas[np.argmin(ridge_losses[:, 1])], lasso_lamdas[np.argmin(lasso_losses[:, 1])]
+
 
 def q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y):
-    ls_model = LinearRegression().fit (train_X, train_y)
+    ls_model = LinearRegression().fit(train_X, train_y)
     ridge_model = RidgeRegression(lam=lamda_ridge).fit(train_X, train_y)
     lasso_model = Lasso(alpha=lamda_lasso).fit(train_X, train_y)
 
@@ -156,6 +160,7 @@ def q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y):
     print('ls_model_loss is: ' + str(ls_model_loss))
     print('ridge_model_loss is: ' + str(ridge_model_loss))
     print('lasso_model_loss is: ' + str(lasso_model_loss))
+
 
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
@@ -174,7 +179,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     train_X, train_y, test_X, test_y = q6(n_samples)
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    lamda_ridge, lamda_lasso = q7(train_X, train_y, test_X, test_y, n_evaluations)
+    lamda_ridge, lamda_lasso = q7(train_X, train_y, n_evaluations)
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
     q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y)
@@ -182,7 +187,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    select_polynomial_degree(n_samples=100, noise=5)
-    select_polynomial_degree(n_samples=100, noise=0)
-    select_polynomial_degree(n_samples=1500, noise=10)
+    # select_polynomial_degree(n_samples=100, noise=5)
+    # select_polynomial_degree(n_samples=100, noise=0)
+    # select_polynomial_degree(n_samples=1500, noise=10)
     select_regularization_parameter(50, 500)
