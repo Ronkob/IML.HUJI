@@ -62,7 +62,7 @@ class RidgeRegression(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.c_[np.ones(len(X)), X]
-        self.coefs_ = (pinv(X) @ y)/(1+self.lam_)
+        self.coefs_ = (pinv((X.T @ X) + self.lam_*np.eye(X.shape[1])) @ (X.T @ y))
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """

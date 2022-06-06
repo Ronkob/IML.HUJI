@@ -41,7 +41,8 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
 
     train_loss = []
     test_loss = []
-
+    # shuffle_idx = (np.arange(X.shape[0]))
+    # np.random.shuffle(shuffle_idx)
     X_splited = np.asarray(np.array_split(X, cv))
     y_splited = np.asarray(np.array_split(y, cv))
 

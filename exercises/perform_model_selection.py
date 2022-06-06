@@ -118,26 +118,31 @@ def q7(train_X, train_y, test_X, test_y, n_evaluations):
         lasso_model = Lasso(alpha=lamda)
         avg_train_lasso, avg_test_lasso = cross_validate(lasso_model, train_X, train_y, scoring=mean_square_error)
         lasso_losses.append((avg_train_lasso, avg_test_lasso))
-        ridge_model = Ridge(alpha=lamda/2)
+        ridge_model = RidgeRegression(lam=lamda/2)
         avg_train_ridge, avg_test_ridge = cross_validate(ridge_model, train_X, train_y, scoring=mean_square_error)
         ridge_losses.append((avg_train_ridge, avg_test_ridge))
 
     ridge_losses = np.asarray(ridge_losses)
     lasso_losses = np.asarray(lasso_losses)
 
-    go.Figure(data=[go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 0], name='lasso train avg loss', mode='markers'),
+    fig = go.Figure(data=[go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 0], name='lasso train avg loss', mode='markers'),
                     go.Scatter(x=np.linspace(0, 2, n_evaluations), y=lasso_losses[:, 1], name='lasso test avg loss', mode='markers'),
                     go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 0], name='ridge train avg loss', mode='markers'),
                     go.Scatter(x=np.linspace(0, 1, n_evaluations), y=ridge_losses[:, 1], name='ridge test avg loss', mode='markers')
                     ],
               layout=dict(
-                  title=rf"$\text{{(7) train and validation errors along different regularization terms | }}$")).show()
+                  title=rf"$\text{{(7) train and validation errors along different regularization terms | }}$"))
+    fig.add_annotation(xref='paper', yref='paper', x=0, y=0.95, align='left',
+                       text=f'Best regularization paramater for Ridge is {np.argmin(ridge_losses[:,1])/n_evaluations} \n '
+                            f'Best regularization paramater for Lasso is {np.argmin(lasso_losses[:,1])/(2*n_evaluations)}',
+                       font=dict(size=16), showarrow=False)
+    fig.show()
 
     return np.argmin(ridge_losses[:,1])/n_evaluations, np.argmin(lasso_losses[:,1])/(2*n_evaluations)
 
 def q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y):
     ls_model = LinearRegression().fit (train_X, train_y)
-    ridge_model = Ridge(alpha=lamda_ridge).fit(train_X, train_y)
+    ridge_model = RidgeRegression(lam=lamda_ridge).fit(train_X, train_y)
     lasso_model = Lasso(alpha=lamda_lasso).fit(train_X, train_y)
 
     ls_model_predictions = (ls_model.predict(test_X))
@@ -148,7 +153,9 @@ def q8(lamda_ridge, lamda_lasso, train_X, train_y, test_X, test_y):
     ridge_model_loss = mean_square_error(ridge_model_predictions, test_y)
     lasso_model_loss = mean_square_error(lasso_model_predictions, test_y)
 
-    print(ls_model_loss, ridge_model_loss, lasso_model_loss)
+    print('ls_model_loss is: ' + str(ls_model_loss))
+    print('ridge_model_loss is: ' + str(ridge_model_loss))
+    print('lasso_model_loss is: ' + str(lasso_model_loss))
 
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
@@ -175,7 +182,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # select_polynomial_degree(n_samples=100, noise=5)
-    # select_polynomial_degree(n_samples=100, noise=0)
-    # select_polynomial_degree(n_samples=1500, noise=10)
-    select_regularization_parameter()
+    select_polynomial_degree(n_samples=100, noise=5)
+    select_polynomial_degree(n_samples=100, noise=0)
+    select_polynomial_degree(n_samples=1500, noise=10)
+    select_regularization_parameter(50, 500)
